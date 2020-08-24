@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "Components/TimelineComponent.h"
 #include "RunnerCharacter.generated.h"
 
 UENUM()
@@ -35,13 +36,27 @@ class ARunnerCharacter : public ACharacter
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class UCameraComponent* FollowCamera;
 
+	/** Strafe actor sideways */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Timeline, meta = (AllowPrivateAccess = "true"))
+	class UTimelineComponent* StrafingTimeLineComponent;
+	
 	UFUNCTION(BlueprintCallable, Category = "Game")
 	void AddCoin();
+
+	/** Declare strafe timeline delegate to be binded with StrafeTimeLineReturn (float Value) */
+	FOnTimelineFloat InterpFunction{};
+	/** Declare strafe timeline delegate to be binded with StrafeTimeLineFinished() */
+	FOnTimelineEvent OnStrafeTimeLineFinished{};
+	UFUNCTION()
+	void StrafeTimeLineReturn (float Value);
+		
+	UFUNCTION()
+	void StrafeTimeLineFinished();
 	
 public:
 	ARunnerCharacter();
 
-	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
+		/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
 	float BaseTurnRate;
 
@@ -53,6 +68,10 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
 	float BaseLaneSwitchDistance;
 
+	/** Base curve function for strafe timeline. */
+	UPROPERTY(EditAnywhere, Category=Timeline)
+	class UCurveFloat* FCurve;
+	
 	/** Base possibility to turn at input. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category=Character)
 	bool bCanTurn;
@@ -60,6 +79,9 @@ public:
 	/** Base status for death */
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category=Character)
 	bool bDead;
+	/** Base status for strafing */
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category=Character)
+	bool bStrafing;
 
 	/** Base desired rotation. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Character)
@@ -76,9 +98,14 @@ public:
 	/** Next lane to occupy */
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category=Character)
 	TEnumAsByte<ELane> NextLane;
-
-	
+	UPROPERTY()
 	TEnumAsByte<EMoveDirection> MoveDirection;
+	UPROPERTY()
+	FVector CurrentLocation;
+	UPROPERTY()
+	FVector DestinationLocation;
+	
+	
 	
 	
 	
@@ -88,17 +115,17 @@ protected:
 	/** Resets HMD orientation in VR. */
 	void OnResetVR();
 
-	/** Called for forwards/backward input */
-	void MoveForward(float Value);
-
 	/** Called for side to side input */
-	void MoveRight(float Value);
+	void MoveRight();
+	void MoveLeft();
+
 
 	/** Handler for when a touch input begins. */
 	void TouchStarted(ETouchIndex::Type FingerIndex, FVector Location);
 
 	/** Handler for when a touch input stops. */
 	void TouchStopped(ETouchIndex::Type FingerIndex, FVector Location);
+	void MoveForward(float Value);
 
 protected:
 	// APawn interface
@@ -114,6 +141,8 @@ public:
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 private:
+	// Called at play
+	virtual void BeginPlay() override;
 	// Called every frame
 	virtual void Tick( float DeltaTime ) override;
 };
