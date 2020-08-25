@@ -6,6 +6,7 @@
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/InputComponent.h"
+#include "Components/PrimitiveComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -34,8 +35,8 @@ ARunnerCharacter::ARunnerCharacter()
 	// Configure character movement
 	GetCharacterMovement()->bOrientRotationToMovement = true; // Character moves in the direction of input...	
 	GetCharacterMovement()->RotationRate              = FRotator(0.0f, 540.0f, 0.0f); // ...at this rotation rate
-	GetCharacterMovement()->JumpZVelocity             = 600.f;
-	GetCharacterMovement()->AirControl                = 0.2f;
+	GetCharacterMovement()->JumpZVelocity             = 600.f;	
+	GetCharacterMovement()->AirControl                = 0.1f;
 	GetCharacterMovement()->MaxWalkSpeed              = 1500.0f;
 
 	// Create a camera boom (pulls in towards the player if there is a collision)
@@ -102,26 +103,13 @@ void ARunnerCharacter::AddCoin()
 
 void ARunnerCharacter::StrafeTimeLineReturn(float Value)
 {
-	switch (MoveDirection)
-	{
-		case ToLeft:
-			//DestinationLocation.Y-=BaseLaneSwitchDistance;
-			//GLog->Log(TEXT("выбрано ToLeft"));
-			break;
-		case  ToRight:
-			//DestinationLocation.Y+=BaseLaneSwitchDistance;
-			//GLog->Log(TEXT("выбрано ToRight"));
-			break;
-		default:
-			//GLog->Log(TEXT("Не выбрано направление"));
-			break;
-			
-	}
+
 	
-	//SetActorLocation(FMath::Lerp(CurrentLocation,DestinationLocation, Value),false,nullptr, ETeleportType::None);
-	SetActorLocation(FMath::VInterpTo(GetActorLocation(), DestinationLocation, Value, Value), false, nullptr,
-	                 ETeleportType::TeleportPhysics);
-	//MoveForward(1.0f);
+	SetActorLocation(FMath::Lerp(CurrentLocation,DestinationLocation, Value),false,nullptr, ETeleportType::None);
+	
+	//SetActorLocation(FMath::VInterpTo(GetActorLocation(), DestinationLocation, Value, Value), false, nullptr,ETeleportType::None	);
+	                 
+	//TeleportPhysics;
 }
 
 void ARunnerCharacter::StrafeTimeLineFinished()
@@ -140,8 +128,7 @@ void ARunnerCharacter::StrafeTimeLineFinished()
 //		
 //	}
 	bStrafing = false;
-	MoveDirection = None;
-	GLog->Log(TEXT("фал"));
+	MoveDirection = None;	
 }
 
 void ARunnerCharacter::OnRunnerDeath()
@@ -171,6 +158,7 @@ void ARunnerCharacter::BeginPlay()
 void ARunnerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	auto TempVelocity = GetCharacterMovement()->VisualizeMovement();
 	if (!bDead)
 		MoveForward(1.0f);
 		
@@ -232,6 +220,7 @@ void ARunnerCharacter::MoveRight()
 			GLog->Log(TEXT("тру"));
 			CurrentLocation = DestinationLocation = GetActorLocation();
 			DestinationLocation.Y+=BaseLaneSwitchDistance;
+			DestinationLocation.X += GetActorForwardVector().X * GetCharacterMovement()->MaxWalkSpeed * 0.1f ;
 			StrafingTimeLineComponent->PlayFromStart();			
 			
 		}       
@@ -319,6 +308,7 @@ void ARunnerCharacter::MoveLeft()
             GLog->Log(TEXT("тру"));
         	CurrentLocation = DestinationLocation = GetActorLocation();
         	DestinationLocation.Y-=BaseLaneSwitchDistance;
+        	DestinationLocation.X += GetActorForwardVector().X * GetCharacterMovement()->MaxWalkSpeed * 0.1f;
             StrafingTimeLineComponent->PlayFromStart();
             
 			
